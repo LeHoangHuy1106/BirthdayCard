@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Happy Birthday</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(to right top,#1f0537,#380c60,#55108c,#7413bb,#9612eb);
+  font-family: 'Nobile', sans-serif;
+  overflow: hidden;
+}
+
+/* CONFETTI */
+#confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* CARD */
+.card {
+  position: relative;
+  width: min(90vw, 300px);
+  aspect-ratio: 300 / 425;
+  border: 10px solid #9612eb;
+  background:
+    linear-gradient(to bottom,rgba(255,255,255,1),rgba(255,255,255,.5)),
+    url("avt.png");
+  background-size: cover;
+  background-position: center;
+  box-shadow: inset 10px 0 15px rgba(0,0,0,.15);
+  cursor: pointer;
+}
+
+/* FRONT & BACK */
+.front, .back {
+  position: absolute;
+  inset: -10px;
+  border: 10px solid #9612eb;
+  transform-origin: 0% 50%;
+  transform-style: preserve-3d;
+  transition: transform 2s ease-in-out;
+}
+
+.front {
+  background:#9612eb;
+  backface-visibility: hidden;
+}
+
+.back {
+  background:#e6f0e6;
+  filter: drop-shadow(2px 2px 4px rgba(0,0,0,.4));
+}
+
+/* Desktop hover */
+@media (hover:hover) {
+  .card:hover .front,
+  .card:hover .back {
+    transform: perspective(800px) rotateY(-170deg);
+  }
+}
+
+/* Mobile tap */
+.card.open .front,
+.card.open .back {
+  transform: perspective(800px) rotateY(-170deg);
+}
+
+/* FRONT IMAGE */
+.imgset { margin-bottom: -70%; }
+.imgset img {
+  width: 100%;
+  border-radius: 6px;
+  box-shadow: 0 6px 12px rgba(0,0,0,.25);
+}
+
+/* TEXT */
+.text {
+  width: 80%;
+  margin: auto;
+  text-align: center;
+}
+
+h1 {
+  font-size: 1.4em;
+  margin: 45px 0;
+  color: #331717;
+}
+
+p {
+  font-size: 1em;
+  font-style: italic;
+  color: #331717;
+  margin: 18px 0;
+  line-height: 1.4;
+}
+
+/* GIFT CONTENT */
+.fade-out {
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+  transition: .6s ease;
+}
+
+.gift-box {
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.gift-box img {
+  width: 110px;
+  transition: transform .2s ease;
+}
+
+.gift-box:hover img {
+  transform: scale(1.05);
+}
+
+.gift-label {
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: #ff3d77;
+}
+
+/* ===== QR OVERLAY ===== */
+.qr-wrapper {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  opacity: 0;
+  transform: scale(0.95);
+  pointer-events: none;
+  transition: opacity .8s ease, transform .8s ease;
+}
+
+.qr-wrapper.show {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.qr-wrapper img {
+  width: min(72vw, 260px);   /* TO – DỄ QUÉT */
+  border-radius: 20px;
+  background: white;
+  padding: 16px;
+  box-shadow: 0 18px 40px rgba(0,0,0,.35);
+}
+
+/* DOWNLOAD BUTTON */
+.qr-download {
+  margin-top: 18px;
+  padding: 12px 24px;
+  border-radius: 999px;
+  border: none;
+
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: .5px;
+
+  background: linear-gradient(135deg,#ff8a00,#ff3d77);
+  color: white;
+
+  box-shadow: 0 10px 25px rgba(0,0,0,.3);
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="confetti"></canvas>
+
+<audio id="bgm" loop>
+  <source src="music.mp3" type="audio/mpeg">
+</audio>
+
+<div class="card" id="card">
+  <div class="back"></div>
+
+  <div class="front">
+    <div class="imgset">
+      <img src="bia.png">
+    </div>
+  </div>
+
+  <div class="text">
+
+    <!-- CONTENT -->
+    <div id="giftContent">
+      <h1>Happy Birthday Em</h1>
+      <p>Chúc em một tuổi mới bình yên, nhiều niềm vui và những điều nhẹ nhàng.</p>
+
+      <div class="gift-box" id="giftBox">
+        <img src="box.png">
+        <div class="gift-label">YOUR GIFT</div>
+      </div>
+    </div>
+
+    <!-- QR -->
+    <div class="qr-wrapper" id="qrBox">
+      <img src="qr.png" id="qrImage">
+      <button class="qr-download" id="downloadQR">TẢI VỀ</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ===== MUSIC ===== */
+const bgm = document.getElementById("bgm");
+bgm.volume = .6;
+
+window.addEventListener("load",()=>{
+  bgm.play().catch(()=>{});
+});
+
+let musicPlayed=false;
+function ensureMusic(){
+  if(!musicPlayed){
+    bgm.play().catch(()=>{});
+    musicPlayed=true;
+  }
+}
+
+/* CARD */
+const card=document.getElementById("card");
+card.addEventListener("click",()=>{
+  card.classList.toggle("open");
+  ensureMusic();
+});
+
+/* GIFT → QR */
+const giftBox=document.getElementById("giftBox");
+const giftContent=document.getElementById("giftContent");
+const qrBox=document.getElementById("qrBox");
+
+giftBox.addEventListener("click",(e)=>{
+  e.stopPropagation();
+  giftContent.classList.add("fade-out");
+  setTimeout(()=>qrBox.classList.add("show"),300);
+});
+
+/* DOWNLOAD QR (MOBILE OK) */
+document.getElementById("downloadQR").addEventListener("click",(e)=>{
+  e.stopPropagation();
+  const img = document.getElementById("qrImage");
+  const a = document.createElement("a");
+  a.href = img.src;
+  a.download = "gift-qr.png";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+});
+
+/* CONFETTI */
+const canvas=document.getElementById("confetti");
+const ctx=canvas.getContext("2d");
+
+function resize(){
+  canvas.width=innerWidth;
+  canvas.height=innerHeight;
+}
+resize();
+addEventListener("resize",resize);
+
+const colors=["#ff8a00","#ff3d77","#ffd166","#6a5acd","#fff"];
+const confettis=Array.from({length:120},()=>({
+  x:Math.random()*canvas.width,
+  y:Math.random()*canvas.height-canvas.height,
+  r:Math.random()*6+4,
+  d:Math.random()*1.2+.5,
+  c:colors[Math.floor(Math.random()*colors.length)],
+  a:Math.random()*Math.PI,
+  t:Math.random()*10
+}));
+
+(function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  confettis.forEach(o=>{
+    ctx.beginPath();
+    ctx.strokeStyle=o.c;
+    ctx.lineWidth=o.r;
+    ctx.moveTo(o.x,o.y);
+    ctx.lineTo(o.x+o.t,o.y+o.r);
+    ctx.stroke();
+    o.y+=o.d;
+    o.a+=.08;
+    o.t=Math.sin(o.a)*8;
+    if(o.y>canvas.height){o.y=-20;o.x=Math.random()*canvas.width;}
+  });
+  requestAnimationFrame(draw);
+})();
+</script>
+
+</body>
+</html>
