@@ -105,7 +105,7 @@ p {
   line-height: 1.4;
 }
 
-/* GIFT CONTENT */
+/* CONTENT FADE */
 .fade-out {
   opacity: 0;
   transform: translateY(-10px);
@@ -113,6 +113,7 @@ p {
   transition: .6s ease;
 }
 
+/* GIFT BOX */
 .gift-box {
   margin-top: 22px;
   display: flex;
@@ -138,7 +139,7 @@ p {
   color: #ff3d77;
 }
 
-/* ===== QR OVERLAY ===== */
+/* ===== QR FINAL STATE ===== */
 .qr-wrapper {
   position: absolute;
   inset: 0;
@@ -160,7 +161,7 @@ p {
 }
 
 .qr-wrapper img {
-  width: min(72vw, 260px);   /* TO – DỄ QUÉT */
+  width: min(72vw, 260px);
   border-radius: 20px;
   background: white;
   padding: 16px;
@@ -173,14 +174,11 @@ p {
   padding: 12px 24px;
   border-radius: 999px;
   border: none;
-
   font-size: 15px;
   font-weight: 700;
   letter-spacing: .5px;
-
   background: linear-gradient(135deg,#ff8a00,#ff3d77);
   color: white;
-
   box-shadow: 0 10px 25px rgba(0,0,0,.3);
 }
 </style>
@@ -216,7 +214,7 @@ p {
       </div>
     </div>
 
-    <!-- QR -->
+    <!-- QR FINAL -->
     <div class="qr-wrapper" id="qrBox">
       <img src="qr.png" id="qrImage">
       <button class="qr-download" id="downloadQR">TẢI VỀ</button>
@@ -228,40 +226,40 @@ p {
 <script>
 /* ===== MUSIC ===== */
 const bgm = document.getElementById("bgm");
-bgm.volume = .6;
-
-window.addEventListener("load",()=>{
+bgm.volume = 0.6;
+window.addEventListener("load", () => {
   bgm.play().catch(()=>{});
 });
 
-let musicPlayed=false;
-function ensureMusic(){
-  if(!musicPlayed){
-    bgm.play().catch(()=>{});
-    musicPlayed=true;
-  }
-}
+/* ===== STATE ===== */
+let musicPlayed = false;
+let giftOpened = false;
 
-/* CARD */
-const card=document.getElementById("card");
-card.addEventListener("click",()=>{
+/* ===== CARD ===== */
+const card = document.getElementById("card");
+card.addEventListener("click", () => {
+  if (giftOpened) return;   // 🔒 KHÔNG CHO ĐÓNG LẠI
   card.classList.toggle("open");
-  ensureMusic();
+  if (!musicPlayed) {
+    bgm.play().catch(()=>{});
+    musicPlayed = true;
+  }
 });
 
-/* GIFT → QR */
-const giftBox=document.getElementById("giftBox");
-const giftContent=document.getElementById("giftContent");
-const qrBox=document.getElementById("qrBox");
+/* ===== GIFT → QR ===== */
+const giftBox = document.getElementById("giftBox");
+const giftContent = document.getElementById("giftContent");
+const qrBox = document.getElementById("qrBox");
 
-giftBox.addEventListener("click",(e)=>{
+giftBox.addEventListener("click", (e) => {
   e.stopPropagation();
+  giftOpened = true;               // 🔒 LOCK STATE
   giftContent.classList.add("fade-out");
-  setTimeout(()=>qrBox.classList.add("show"),300);
+  setTimeout(() => qrBox.classList.add("show"), 300);
 });
 
-/* DOWNLOAD QR (MOBILE OK) */
-document.getElementById("downloadQR").addEventListener("click",(e)=>{
+/* ===== DOWNLOAD QR ===== */
+document.getElementById("downloadQR").addEventListener("click", (e) => {
   e.stopPropagation();
   const img = document.getElementById("qrImage");
   const a = document.createElement("a");
@@ -272,19 +270,19 @@ document.getElementById("downloadQR").addEventListener("click",(e)=>{
   document.body.removeChild(a);
 });
 
-/* CONFETTI */
-const canvas=document.getElementById("confetti");
-const ctx=canvas.getContext("2d");
+/* ===== CONFETTI ===== */
+const canvas = document.getElementById("confetti");
+const ctx = canvas.getContext("2d");
 
 function resize(){
-  canvas.width=innerWidth;
-  canvas.height=innerHeight;
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
 }
 resize();
-addEventListener("resize",resize);
+addEventListener("resize", resize);
 
-const colors=["#ff8a00","#ff3d77","#ffd166","#6a5acd","#fff"];
-const confettis=Array.from({length:120},()=>({
+const colors = ["#ff8a00","#ff3d77","#ffd166","#6a5acd","#fff"];
+const confettis = Array.from({length:120},()=>({
   x:Math.random()*canvas.width,
   y:Math.random()*canvas.height-canvas.height,
   r:Math.random()*6+4,
